@@ -26,7 +26,16 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
+          if [ -d "dist" ]; then
+            cp dist/index.html dist/404.html
+            echo "Build succeeded. Files in dist:"
+            ls -la dist
+          else
+            echo "Error: dist directory not found!"
+            exit 1
+          fi
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -40,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
   deploy:
     environment:

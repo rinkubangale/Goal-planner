@@ -276,27 +276,43 @@ export default function App() {
   const [locationStatus, setLocationStatus] = useState<'pending' | 'granted' | 'denied' | 'error'>('pending');
   const [coordData, setCoordData] = useState<{ latitude: number; longitude: number; accuracy: number; timestamp: number } | null>(null);
 
-  // 1. Establish Geolocation Watcher
-  useEffect(() => {
+  const requestLocation = () => {
     if (!("geolocation" in navigator)) {
       setLocationStatus('error');
       return;
     }
 
-    const watchId = navigator.geolocation.watchPosition(
+    setLocationStatus('pending');
+
+    navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         setCoordData({ latitude, longitude, accuracy, timestamp: position.timestamp });
         setLocationStatus('granted');
+        
+        // Start watching after initial success
+        navigator.geolocation.watchPosition(
+          (pos) => {
+            const { latitude, longitude, accuracy } = pos.coords;
+            setCoordData({ latitude, longitude, accuracy, timestamp: pos.timestamp });
+          },
+          (err) => console.error("Watch error:", err),
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
       },
       (error) => {
         console.error("Location access error:", error);
         setLocationStatus('denied');
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
 
-    return () => navigator.geolocation.clearWatch(watchId);
+  // 1. Establish Geolocation Watcher
+  useEffect(() => {
+    // Attempt auto-request, but some mobile browsers might block if not user-triggered
+    // We'll try anyway, but the error screen will provide a manual trigger
+    requestLocation();
   }, []);
 
   // 2. Synchronize Identity and Coordinates to Firestore
@@ -500,9 +516,11 @@ export default function App() {
         </div>
         <h1 className="text-xl font-bold text-[var(--text-main)] mb-2">Protocol Access Restricted</h1>
         <p className="text-[var(--text-muted)] max-w-xs text-sm mb-8 leading-relaxed">
-          Mission initialization requires mandatory environment verification. Please enable all system permissions when prompted by your terminal to proceed.
+          Mission initialization requires mandatory environment verification. Please enable location access in your browser settings and tap below to proceed.
         </p>
-        <SLDSButton theme={theme} variant="brand" onClick={() => window.location.reload()}>Retry Verification</SLDSButton>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <SLDSButton theme={theme} variant="brand" onClick={requestLocation}>Initialize Verification</SLDSButton>
+        </div>
       </div>
     );
   }
