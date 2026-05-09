@@ -274,6 +274,7 @@ export default function App() {
   const [colorMode, setColorMode] = useState<'light' | 'dark'>('light');
 
   const [locationStatus, setLocationStatus] = useState<'pending' | 'granted' | 'denied' | 'error'>('pending');
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [coordData, setCoordData] = useState<{ latitude: number; longitude: number; accuracy: number; timestamp: number } | null>(null);
 
   const requestLocation = () => {
@@ -282,15 +283,22 @@ export default function App() {
       return;
     }
 
-    setLocationStatus('pending');
+    setIsRequestingLocation(true);
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 30000 // Allow some cached data for faster initial response
+    };
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         setCoordData({ latitude, longitude, accuracy, timestamp: position.timestamp });
         setLocationStatus('granted');
+        setIsRequestingLocation(false);
         
-        // Start watching after initial success
+        // Start watching for updates
         navigator.geolocation.watchPosition(
           (pos) => {
             const { latitude, longitude, accuracy } = pos.coords;
@@ -302,16 +310,17 @@ export default function App() {
       },
       (error) => {
         console.error("Location access error:", error);
+        // Only set to denied if it's not the initial auto-request or if it's a hard denial
         setLocationStatus('denied');
+        setIsRequestingLocation(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      options
     );
   };
 
   // 1. Establish Geolocation Watcher
   useEffect(() => {
-    // Attempt auto-request, but some mobile browsers might block if not user-triggered
-    // We'll try anyway, but the error screen will provide a manual trigger
+    // Attempt auto-request on mount
     requestLocation();
   }, []);
 
@@ -495,7 +504,7 @@ export default function App() {
     }
   };
 
-  if (isAuthLoading || (user && locationStatus === 'pending')) {
+  if (isAuthLoading || (user && locationStatus === 'pending' && !isRequestingLocation)) {
     return (
       <div className={cn("min-h-screen flex items-center justify-center p-6 text-center transition-colors", theme === 'ascent' ? "bg-[#020617]" : "bg-[var(--bg-main)]")}>
         <motion.div 
@@ -508,10 +517,10 @@ export default function App() {
     );
   }
 
-  if (user && (locationStatus === 'denied' || locationStatus === 'error')) {
+  if (user && (locationStatus === 'denied' || locationStatus === 'error' || (locationStatus === 'pending' && isRequestingLocation))) {
     return (
       <div className={cn("min-h-screen flex flex-col items-center justify-center p-6 text-center transition-colors", theme === 'ascent' ? "bg-[#020617]" : "bg-[var(--bg-main)]")}>
-        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-6">
+        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-6 shadow-lg shadow-red-500/10">
           <ShieldAlert className="w-8 h-8" />
         </div>
         <h1 className="text-xl font-bold text-[var(--text-main)] mb-2">Protocol Access Restricted</h1>
@@ -519,7 +528,25 @@ export default function App() {
           Mission initialization requires mandatory environment verification. Please enable location access in your browser settings and tap below to proceed.
         </p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
-          <SLDSButton theme={theme} variant="brand" onClick={requestLocation}>Initialize Verification</SLDSButton>
+          <SLDSButton 
+            theme={theme} 
+            variant="brand" 
+            onClick={requestLocation} 
+            disabled={isRequestingLocation}
+            className="h-12 text-base shadow-xl"
+          >
+            {isRequestingLocation ? (
+              <span className="flex items-center gap-2">
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                Verifying...
+              </span>
+            ) : "Initialize Verification"}
+          </SLDSButton>
+          {locationStatus === 'denied' && (
+            <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider mt-2 animate-pulse">
+              Access Refused. Check Device Settings.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -665,15 +692,17 @@ export default function App() {
 
             {currentTab === 'Strategy' && (
               <motion.div key="strategy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto w-full space-y-6">
-                <div className="flex items-center justify-between gap-4 mb-2">
-                  <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-[var(--brand-primary)]" />
-                    <h2 className="text-lg font-bold text-[var(--text-main)]">Mission Log Cycles</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-2 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+                      <History className="w-5 h-5" />
+                    </div>
+                    <h2 className="text-lg font-bold text-[var(--text-main)] truncate">Mission Log</h2>
                   </div>
-                  <SLDSButton theme={theme} icon={Plus} variant="neutral" onClick={() => setIsLogModalOpen(true)} className="text-xs py-1.5 px-3">Manual Entry</SLDSButton>
+                  <SLDSButton theme={theme} icon={Plus} variant="neutral" onClick={() => setIsLogModalOpen(true)} className="text-xs py-1.5 px-3 shrink-0">Manual Entry</SLDSButton>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* Desktop Table View */}
                   <div className={cn("hidden md:block border rounded-lg overflow-hidden", theme === 'ascent' ? "border-white/10" : "border-[var(--border-color)]")}>
                     <table className="w-full text-sm text-left">
@@ -754,25 +783,30 @@ export default function App() {
             {currentTab === 'Summit' && (
               <motion.div key="summit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto w-full space-y-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Trophy className="w-5 h-5 text-[var(--brand-primary)]" />
+                  <div className="p-2 rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
+                    <Trophy className="w-5 h-5" />
+                  </div>
                   <h2 className="text-lg font-bold text-[var(--text-main)]">The Summit Vault</h2>
                 </div>
-                <SLDSCard theme={theme} className="flex flex-col items-center justify-center p-8 md:p-20 text-center min-h-[400px]">
-                  <div className="relative mb-8">
-                    <div className="w-20 h-20 md:w-28 md:h-28 bg-[var(--brand-primary)]/10 rounded-full flex items-center justify-center text-[var(--brand-primary)] shadow-inner">
-                      <Trophy className="w-10 h-10 md:w-14 md:h-14 stroke-[1.5px]" />
+                <SLDSCard theme={theme} className="flex flex-col items-center justify-center p-8 md:p-20 text-center min-h-[450px]">
+                  <div className="relative mb-10">
+                    <div className="w-24 h-24 md:w-32 md:h-32 bg-[var(--brand-primary)]/10 rounded-full flex items-center justify-center text-[var(--brand-primary)] shadow-inner">
+                      <Trophy className="w-12 h-12 md:w-16 md:h-16 stroke-[1.5px]" />
                     </div>
-                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-lg">
-                      <Shield className="w-4 h-4" />
-                    </div>
+                    <motion.div 
+                      initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5, type: 'spring' }}
+                      className="absolute -top-1 -right-1 bg-amber-500 text-white p-2 rounded-full shadow-lg border-2 border-[var(--card-bg)]"
+                    >
+                      <Shield className="w-4 h-4 md:w-5 md:h-5" />
+                    </motion.div>
                   </div>
                   <h2 className="text-2xl md:text-3xl font-black mb-4 text-[var(--text-main)] tracking-tight italic uppercase">Access Restricted</h2>
-                  <p className="text-[var(--text-muted)] max-w-sm mb-10 leading-relaxed text-sm md:text-base font-medium">
+                  <p className="text-[var(--text-muted)] max-w-sm mb-12 leading-relaxed text-sm md:text-base font-medium">
                     This restricted high-security module unlocks only upon achieving 100% mission parity for <span className="text-[var(--text-main)] font-bold">{goal?.name || 'your objective'}</span>. Complete your strategy to decrypt the vault.
                   </p>
-                  <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                  <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto mt-4">
                     <SLDSButton theme={theme} disabled className="w-full md:w-auto opacity-50 grayscale cursor-not-allowed">Generate Summit Report</SLDSButton>
-                    <SLDSButton theme={theme} variant="neutral" onClick={() => setCurrentTab('Metrics')} className="w-full md:w-auto">View Progress Map</SLDSButton>
+                    <SLDSButton theme={theme} variant="neutral" onClick={() => setCurrentTab('Metrics')} className="w-full md:w-auto border-dashed">View Progress Map</SLDSButton>
                   </div>
                 </SLDSCard>
               </motion.div>
