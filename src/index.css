@@ -49,11 +49,25 @@
   }
 
   body {
-    @apply transition-colors duration-300;
+    @apply transition-colors duration-300 overflow-x-hidden;
     background-color: var(--bg-main);
     color: var(--text-main);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain; /* Prevent pull-to-refresh if possible */
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Hide scrollbars for a cleaner, native-like mobile feel */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  * {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 }
 

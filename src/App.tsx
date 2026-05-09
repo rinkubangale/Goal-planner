@@ -180,12 +180,12 @@ const Modal = ({ isOpen, onClose, title, children, theme = 'lightning' }: { isOp
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-[#080707]/60 backdrop-blur-sm z-[100]" 
+          className="fixed inset-0 bg-[#080707]/60 backdrop-blur-sm z-[200]" 
         />
         <motion.div 
           initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
           className={cn(
-            "fixed inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-xl md:rounded-lg z-[101] shadow-2xl flex flex-col max-h-[90vh]",
+            "fixed inset-x-0 bottom-0 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-xl md:rounded-lg z-[201] shadow-2xl flex flex-col max-h-[90vh]",
             theme === 'ascent' ? "ascent-glass border-white/10" : "bg-[var(--card-bg)] text-[var(--text-main)]"
           )}
         >
@@ -548,15 +548,14 @@ export default function App() {
     )}>
       
       {/* Global Header */}
-      <header className="h-14 bg-[var(--header-bg)] border-b border-[var(--border-color)] flex items-center justify-between px-4 md:px-6 sticky top-0 z-[100] shadow-sm backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="bg-[var(--brand-primary)] p-1.5 rounded text-white"><Shield className="w-5 h-5" /></div>
-          <div className="h-6 w-[1px] bg-[var(--border-color)] hidden md:block" />
-          <nav className="flex items-center gap-1">
+      <header className="h-14 bg-[var(--header-bg)] border-b border-[var(--border-color)] flex items-center justify-between px-3 md:px-6 sticky top-0 z-[100] shadow-sm backdrop-blur-md w-full overflow-x-hidden">
+        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+          <div className="bg-[var(--brand-primary)] p-1.5 rounded text-white flex-shrink-0 shadow-sm"><Shield className="w-5 h-5" /></div>
+          <nav className="flex items-center gap-1 min-w-0">
             <select 
               value={activeGoalId || ''}
               onChange={(e) => e.target.value === 'add_new' ? setIsAddGoalModalOpen(true) : setActiveGoalId(e.target.value)}
-              className="bg-transparent text-sm font-bold text-[var(--text-main)] hover:text-[var(--brand-primary)] cursor-pointer focus:outline-none max-w-[150px] truncate"
+              className="bg-transparent text-sm font-bold text-[var(--text-main)] hover:text-[var(--brand-primary)] cursor-pointer focus:outline-none max-w-[140px] truncate pr-4"
             >
               {goals.map(g => <option key={g.id} value={g.id} className="bg-[var(--card-bg)]">{g.name}</option>)}
               <option value="add_new" className="bg-[var(--card-bg)] font-bold">+ New Mission</option>
@@ -564,77 +563,19 @@ export default function App() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-4">
-          {/* UI Switcher Dropdown */}
-          <div className="relative group">
-            <select 
-              value={theme}
-              onChange={(e) => setTheme(e.target.value as any)}
-              className="bg-[var(--bg-main)] border border-[var(--border-color)] text-[var(--text-main)] text-[10px] font-bold rounded-lg px-3 py-1.5 focus:outline-none appearance-none cursor-pointer pr-8 uppercase tracking-wider hover:border-[var(--brand-primary)] transition-colors"
-            >
-              <option value="lightning">Lightning UI</option>
-              <option value="ascent">Ascent UI</option>
-            </select>
-            <ChevronRight className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none opacity-50" />
-          </div>
-
-          <div className="h-6 w-[1px] bg-[var(--border-color)] hidden lg:block" />
-
-          {/* Color Mode Toggle */}
+        <div className="flex items-center gap-2">
           <button 
             onClick={() => setColorMode(prev => prev === 'light' ? 'dark' : 'light')}
-            className="p-2 hover:bg-[var(--bg-main)] rounded-full transition-all relative overflow-hidden group"
-            title={colorMode === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            className="p-2 hover:bg-[var(--bg-main)] rounded-full transition-all text-[var(--text-main)] opacity-70"
           >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={colorMode}
-                initial={{ y: 20, opacity: 0, rotate: 45 }}
-                animate={{ y: 0, opacity: 1, rotate: 0 }}
-                exit={{ y: -20, opacity: 0, rotate: -45 }}
-                transition={{ duration: 0.2 }}
-                className="flex items-center justify-center"
-              >
-                {colorMode === 'light' ? <Moon className="w-5 h-5 text-slate-500 group-hover:text-amber-500" /> : <Sun className="w-5 h-5 text-amber-400" />}
-              </motion.div>
-            </AnimatePresence>
+            {colorMode === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5 text-amber-400" />}
           </button>
-
-          <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 hover:bg-[var(--bg-main)] rounded text-[var(--text-main)] opacity-60 transition-colors"><Settings className="w-5 h-5" /></button>
-          
-          <div className="h-6 w-[1px] bg-[var(--border-color)]" />
-          
-          <SLDSButton theme={theme} variant="brand" onClick={() => { setLogAmount(goal?.monthlyEmi.toString() || '0'); setLogDate(new Date().toISOString().split('T')[0]); setIsLogModalOpen(true); }} disabled={goals.length === 0}>
-            <Plus className="w-4 h-4 md:mr-1" /> <span className="hidden md:inline">{t.logCycle}</span>
-          </SLDSButton>
-          
-          <button onClick={() => logout()} className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors ml-1"><LogOut className="w-5 h-5" /></button>
+          <button onClick={() => setIsSettingsModalOpen(true)} className="p-2 hover:bg-[var(--bg-main)] rounded text-[var(--text-main)] opacity-70 transition-colors"><Settings className="w-5 h-5" /></button>
+          <button onClick={() => logout()} className="p-2 hover:bg-red-500/10 rounded text-red-500 transition-colors"><LogOut className="w-5 h-5" /></button>
         </div>
       </header>
 
-      {/* Sub-Header / Tabs */}
-      <div className="bg-[var(--header-bg)] border-b border-[var(--border-color)] px-6 flex items-center gap-8 overflow-x-auto no-scrollbar scroll-smooth">
-        {[
-          { id: 'Map', label: t.map, icon: LayoutGrid },
-          { id: 'Metrics', label: t.metrics, icon: Activity },
-          { id: 'Strategy', label: t.strategy, icon: MapIcon },
-          { id: 'Summit', label: t.summit, icon: Trophy }
-        ].map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => setCurrentTab(tab.id as any)}
-            className={cn(
-              "py-4 border-b-2 transition-all flex items-center gap-2 text-sm font-medium whitespace-nowrap",
-              currentTab === tab.id ? "border-[var(--brand-primary)] text-[var(--brand-primary)]" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-main)]"
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <main className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full overflow-x-hidden pb-24">
         {goals.length === 0 && !isGoalsLoading ? (
           <SLDSCard theme={theme} className="max-w-2xl mx-auto text-center p-12">
             <Target className="w-16 h-16 text-[var(--border-color)] mx-auto mb-6" />
@@ -646,9 +587,9 @@ export default function App() {
           <AnimatePresence mode="wait">
             {currentTab === 'Map' && (
               <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <SLDSCard theme={theme} title={t.proximityMap} icon={Activity} className="lg:col-span-8 flex flex-col items-center justify-center min-h-[500px]">
+                <SLDSCard theme={theme} title={t.proximityMap} icon={Activity} className="lg:col-span-8 flex flex-col items-center justify-center min-h-[400px] md:min-h-[500px]">
                   <CircularProgress theme={theme} progress={metrics.percentComplete} label={t.proximityMap} />
-          <div className={cn("w-full grid grid-cols-3 gap-6 mt-12 pt-8 border-t", theme === 'ascent' ? "border-white/10" : "border-[var(--border-color)]")}>
+          <div className={cn("w-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-12 pt-6 md:pt-8 border-t", theme === 'ascent' ? "border-white/10" : "border-[var(--border-color)]")}>
                     <MetricStat theme={theme} label={t.momentum} value={`+${Math.round(metrics.velocity * 100)}%`} icon={Zap} color="green" />
                     <MetricStat theme={theme} label={t.arrival} value={metrics.estimatedCompletionDate} icon={Calendar} color="blue" />
                     <MetricStat theme={theme} label={t.pattern} value="Consistent" icon={TrendingUp} color="indigo" />
@@ -724,14 +665,23 @@ export default function App() {
 
             {currentTab === 'Strategy' && (
               <motion.div key="strategy" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto w-full space-y-6">
-                <SLDSCard theme={theme} title="Mission Log Cycles" icon={History} actions={<SLDSButton theme={theme} icon={Plus} variant="neutral" onClick={() => setIsLogModalOpen(true)}>Manual Entry</SLDSButton>}>
-                  <div className={cn("border rounded overflow-hidden", theme === 'ascent' ? "border-white/10" : "border-[var(--border-color)]")}>
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5 text-[var(--brand-primary)]" />
+                    <h2 className="text-lg font-bold text-[var(--text-main)]">Mission Log Cycles</h2>
+                  </div>
+                  <SLDSButton theme={theme} icon={Plus} variant="neutral" onClick={() => setIsLogModalOpen(true)} className="text-xs py-1.5 px-3">Manual Entry</SLDSButton>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Desktop Table View */}
+                  <div className={cn("hidden md:block border rounded-lg overflow-hidden", theme === 'ascent' ? "border-white/10" : "border-[var(--border-color)]")}>
                     <table className="w-full text-sm text-left">
                       <thead className={cn("font-bold uppercase text-[10px] tracking-wider", theme === 'ascent' ? "bg-white/10 text-slate-400" : "bg-[var(--bg-main)] text-[var(--text-muted)]")}>
                         <tr>
                           <th className="px-6 py-4">Cycle Date</th>
                           <th className="px-6 py-4 text-right">Commit Amount</th>
-                          <th className="px-6 py-4 text-right">Actions</th>
+                          <th className="px-6 py-4 text-right w-16"></th>
                         </tr>
                       </thead>
                       <tbody className={cn("divide-y", theme === 'ascent' ? "divide-white/10" : "divide-[var(--border-color)]")}>
@@ -751,23 +701,130 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
-                </SLDSCard>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3">
+                    {[...activeContributions].reverse().map(c => (
+                      <div key={c.id} className={cn(
+                        "p-4 rounded-xl border flex items-center justify-between group",
+                        theme === 'ascent' ? "bg-white/5 border-white/10" : "bg-[var(--card-bg)] border-[var(--border-color)]"
+                      )}>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-widest">Cycle Date</span>
+                          <input 
+                            type="date" 
+                            value={c.date} 
+                            onChange={(e) => handleEditCycleDate(c.id, e.target.value)} 
+                            className="bg-transparent border-none p-0 font-bold text-[var(--text-main)] focus:ring-0 cursor-pointer text-sm" 
+                          />
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-end gap-1">
+                            <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-widest text-right">Commit</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs font-bold text-[var(--brand-primary)] opacity-50">{React.createElement(CURRENCY_ICONS[currency] || DollarSign, { className: "w-3 h-3" })}</span>
+                              <input 
+                                type="number" 
+                                value={c.amount} 
+                                onChange={(e) => handleEditCycle(c.id, parseFloat(e.target.value) || 0)} 
+                                className="bg-transparent border-none p-0 text-[var(--brand-primary)] font-bold text-right focus:outline-none w-16 text-sm" 
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => setDeleteConfirmationId(c.id)} 
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500/10 text-red-500 active:scale-90 transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {activeContributions.length === 0 && (
+                      <div className="py-20 text-center opacity-40">
+                        <History className="w-12 h-12 mx-auto mb-4" />
+                        <p className="text-sm font-medium">No cycles logged yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </motion.div>
             )}
 
             {currentTab === 'Summit' && (
-              <motion.div key="summit" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <SLDSCard theme={theme} title="The Vault" icon={Trophy} className="flex flex-col items-center justify-center p-20 text-center max-w-2xl mx-auto">
-                  <div className="w-24 h-24 bg-[var(--bg-main)] rounded-full flex items-center justify-center text-[var(--text-muted)] mb-8 transition-colors"><Trophy className="w-12 h-12" /></div>
-                  <h2 className="text-2xl font-bold mb-2 text-[var(--text-main)]">The Vault</h2>
-                  <p className="text-[var(--text-muted)] max-w-sm mb-8 leading-relaxed">This restricted module unlocks upon achieving 100% mission parity for {goal?.name || 'your objective'}.</p>
-                  <SLDSButton theme={theme} disabled>Generate Summit Report</SLDSButton>
+              <motion.div key="summit" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-4xl mx-auto w-full space-y-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy className="w-5 h-5 text-[var(--brand-primary)]" />
+                  <h2 className="text-lg font-bold text-[var(--text-main)]">The Summit Vault</h2>
+                </div>
+                <SLDSCard theme={theme} className="flex flex-col items-center justify-center p-8 md:p-20 text-center min-h-[400px]">
+                  <div className="relative mb-8">
+                    <div className="w-20 h-20 md:w-28 md:h-28 bg-[var(--brand-primary)]/10 rounded-full flex items-center justify-center text-[var(--brand-primary)] shadow-inner">
+                      <Trophy className="w-10 h-10 md:w-14 md:h-14 stroke-[1.5px]" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-lg">
+                      <Shield className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-black mb-4 text-[var(--text-main)] tracking-tight italic uppercase">Access Restricted</h2>
+                  <p className="text-[var(--text-muted)] max-w-sm mb-10 leading-relaxed text-sm md:text-base font-medium">
+                    This restricted high-security module unlocks only upon achieving 100% mission parity for <span className="text-[var(--text-main)] font-bold">{goal?.name || 'your objective'}</span>. Complete your strategy to decrypt the vault.
+                  </p>
+                  <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                    <SLDSButton theme={theme} disabled className="w-full md:w-auto opacity-50 grayscale cursor-not-allowed">Generate Summit Report</SLDSButton>
+                    <SLDSButton theme={theme} variant="neutral" onClick={() => setCurrentTab('Metrics')} className="w-full md:w-auto">View Progress Map</SLDSButton>
+                  </div>
                 </SLDSCard>
               </motion.div>
             )}
           </AnimatePresence>
         )}
       </main>
+
+      {/* Persistent Bottom Navigation (Instagram Style) */}
+      <nav className="fixed bottom-0 left-0 right-0 h-20 bg-[var(--header-bg)] border-t border-[var(--border-color)] px-4 flex items-center justify-around z-[110] backdrop-blur-lg safe-area-bottom">
+        {[
+          { id: 'Map', label: t.map, icon: LayoutGrid },
+          { id: 'Metrics', label: t.metrics, icon: Activity },
+          { id: 'Strategy', label: t.strategy, icon: MapIcon },
+          { id: 'Summit', label: t.summit, icon: Trophy }
+        ].map(tab => (
+          <button 
+            key={tab.id}
+            onClick={() => setCurrentTab(tab.id as any)}
+            className="flex flex-col items-center justify-center gap-1.5 transition-all text-[var(--text-main)] relative min-w-[64px]"
+          >
+            <div className={cn(
+              "p-2 rounded-full transition-all",
+              currentTab === tab.id ? "bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] scale-110" : "text-[var(--text-muted)]"
+            )}>
+              <tab.icon className={cn("w-6 h-6", currentTab === tab.id ? "stroke-[2.5px]" : "stroke-[2px]")} />
+            </div>
+            <span className={cn(
+              "text-[10px] font-bold uppercase tracking-wider transition-all",
+              currentTab === tab.id ? "text-[var(--brand-primary)] opacity-100" : "text-[var(--text-muted)] opacity-70"
+            )}>
+              {tab.label}
+            </span>
+            {currentTab === tab.id && (
+              <motion.div 
+                layoutId="navIndicator" 
+                className="absolute -top-[1.5px] w-8 h-[3px] bg-[var(--brand-primary)] rounded-full"
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+          </button>
+        ))}
+
+        {/* Global Fab integrated for Log Cycle on Strategy or Metrics */}
+        <button 
+          onClick={() => { setLogAmount(goal?.monthlyEmi.toString() || '0'); setLogDate(new Date().toISOString().split('T')[0]); setIsLogModalOpen(true); }}
+          disabled={goals.length === 0}
+          className="fixed bottom-24 right-4 w-14 h-14 bg-[var(--brand-primary)] text-white rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-all z-[120] disabled:opacity-50 disabled:grayscale"
+        >
+          <Plus className="w-7 h-7" />
+        </button>
+      </nav>
 
       {/* Modals */}
       <Modal theme={theme} isOpen={isAddGoalModalOpen} onClose={() => setIsAddGoalModalOpen(false)} title="Initialize New Mission">
