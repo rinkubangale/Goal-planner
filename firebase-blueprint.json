@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User specific settings and profile data",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "GBP", "INR", "JPY", "AUD"] },
+        "language": { "type": "string", "enum": ["en", "es", "hi", "jp", "de"] },
+        "location": {
+          "type": "object",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "accuracy": { "type": "number" },
+            "timestamp": { "type": "number" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email"]
+    },
+    "Goal": {
+      "title": "Financial Goal",
+      "description": "A target to be reached over time",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "targetAmount": { "type": "number" },
+        "monthlyEmi": { "type": "number" },
+        "startDate": { "type": "string" },
+        "targetDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["name", "targetAmount", "userId"]
+    },
+    "Contribution": {
+      "title": "Periodic Contribution",
+      "description": "A payment or log entry towards a goal",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "date": { "type": "string" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "goalId": { "type": "string" },
+        "userId": { "type": "string" }
+      },
+      "required": ["amount", "date", "goalId", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Individual user settings"
+    },
+    "/users/{userId}/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "User goals"
+    },
+    "/users/{userId}/goals/{goalId}/contributions/{contributionId}": {
+      "schema": "Contribution",
+      "description": "Logs for a specific goal"
+    }
+  }
+}

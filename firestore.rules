@@ -1,0 +1,107 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.email is string && data.email.size() > 0 && data.email.size() <= 256 &&
+             (data.get('displayName', '') is string && data.get('displayName', '').size() <= 128) &&
+             (data.get('currency', 'USD') in ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'AUD']) &&
+             (data.get('language', 'en') in ['en', 'es', 'hi', 'jp', 'de']) &&
+             (data.get('location', null) == null || (
+               data.location.latitude is number &&
+               data.location.longitude is number &&
+               data.location.accuracy is number &&
+               data.location.timestamp is number
+             ));
+    }
+
+    function isValidGoal(data) {
+      return data.keys().hasAll(['name', 'targetAmount', 'userId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 128 &&
+             data.targetAmount is number && data.targetAmount >= 0 &&
+             data.userId == request.auth.uid &&
+             (data.get('monthlyEmi', 0) is number && data.get('monthlyEmi', 0) >= 0) &&
+             (data.get('startDate', '') is string && data.get('startDate', '').size() <= 32) &&
+             (data.get('targetDate', '') is string && data.get('targetDate', '').size() <= 32);
+    }
+
+    function isValidContribution(data) {
+      return data.keys().hasAll(['amount', 'date', 'goalId', 'userId']) &&
+             data.amount is number && data.amount >= 0 &&
+             data.date is string && data.date.size() > 0 && data.date.size() <= 32 &&
+             data.goalId is string && data.goalId.size() <= 128 &&
+             data.userId == request.auth.uid &&
+             (data.get('note', '') is string && data.get('note', '').size() <= 512);
+    }
+
+    // --- Match Blocks ---
+
+    // Users & Settings
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'currency', 'language', 'location', 'updatedAt']) &&
+                    incoming().updatedAt == request.time;
+    }
+
+    // Goals
+    match /users/{userId}/goals/{goalId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(goalId) && isValidGoal(incoming()) && 
+                    incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId) && isValidId(goalId) && isValidGoal(incoming()) && 
+                    (
+                      // Action: Edit Strategy Settings
+                      incoming().diff(existing()).affectedKeys().hasOnly(['name', 'targetAmount', 'monthlyEmi', 'targetDate', 'updatedAt'])
+                    ) &&
+                    incoming().updatedAt == request.time &&
+                    incoming().userId == existing().userId; // Immutable
+      allow delete: if isOwner(userId);
+    }
+
+    // Contributions
+    match /users/{userId}/goals/{goalId}/contributions/{contributionId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(goalId) && isValidId(contributionId) && 
+                    isValidContribution(incoming()) && incoming().createdAt == request.time &&
+                    exists(/databases/$(database)/documents/users/$(userId)/goals/$(goalId)); // Master Gate
+      allow update: if isOwner(userId) && isValidId(goalId) && isValidId(contributionId) && 
+                    isValidContribution(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['amount', 'date', 'note']) &&
+                    incoming().userId == existing().userId &&
+                    incoming().goalId == existing().goalId; // Immutables
+      allow delete: if isOwner(userId);
+    }
+  }
+}

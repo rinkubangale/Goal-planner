@@ -20,7 +20,15 @@ export interface ProgressMetrics {
   totalContributed: number;
   remainingAmount: number;
   estimatedCompletionDate: string;
-  velocity: number; // monthly contribution rate vs target
-  consistencyRate: number; // % of months paid
+  velocity: number;
+  consistencyRate: number;
   streakMonths: number;
+}
+
+export type Currency = 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY' | 'AUD';
+export type Language = 'en' | 'es' | 'hi' | 'jp' | 'de';
+
+export interface AppSettings {
+  currency: Currency;
+  language: Language;
 }
